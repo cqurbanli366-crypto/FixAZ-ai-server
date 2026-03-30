@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Platformadakı müştəri, usta və ya adminlərin məlumatları.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "İstifadəçinin ad və soyadı" },
+        "phone": { "type": "string", "description": "Qeydiyyatdan keçdiyi telefon nömrəsi (+994...)" },
+        "passwordHash": { "type": "string", "description": "Şifrələnmiş parol" },
+        "role": { "type": "string", "enum": ["customer", "repairman", "admin"], "description": "İstifadəçinin rolu" },
+        "balance": { "type": "number", "description": "Daxili pul kisəsindəki məbləğ (AZN)" },
+        "finCode": { "type": "string", "description": "Yalnız ustalar üçün şəxsiyyət vəsiqəsinin FİN kodu" },
+        "profession": { "type": "string", "description": "Yalnız ustalar üçün peşə (məs: Santexnik)" },
+        "status": { "type": "string", "enum": ["active", "pending", "suspended"], "description": "Hesabın vəziyyəti" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Qeydiyyat tarixi" }
+      },
+      "required": ["fullName", "phone", "passwordHash", "role", "status", "createdAt"]
+    },
+    "Category": {
+      "title": "Service Category",
+      "description": "Platformada təklif olunan xidmət növləri.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Xidmətin adı (məs: Elektrik ustası)" },
+        "basePrice": { "type": "number", "description": "Xidmətin minimum başlanğıc qiyməti" },
+        "iconUrl": { "type": "string", "description": "Kateqoriyanı təmsil edən şəklin URL-i" }
+      },
+      "required": ["name", "basePrice"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Müştəri tərəfindən yaradılan və usta tərəfindən qəbul edilən sifariş.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string", "description": "Sifarişi verən müştərinin User ID-si" },
+        "repairmanId": { "type": "string", "description": "Sifarişi qəbul edən ustanın User ID-si" },
+        "categoryId": { "type": "string", "description": "Sifarişin aid olduğu xidmət kateqoriyasının ID-si" },
+        "address": { "type": "string", "description": "Xidmətin göstəriləcəyi ünvan" },
+        "status": { "type": "string", "enum": ["Pending", "Accepted", "On the Way", "Started", "Completed", "Cancelled"], "description": "Sifarişin cari vəziyyəti" },
+        "totalPrice": { "type": "number", "description": "Sifarişin yekun qiyməti (AZN)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Sifarişin yaradılma vaxtı" }
+      },
+      "required": ["customerId", "categoryId", "address", "status", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Müştərinin usta və görülən iş haqqında yazdığı rəy.",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string", "description": "Hansı sifarişə rəy yazıldığını bildirən Order ID" },
+        "rating": { "type": "number", "minimum": 1, "maximum": 5, "description": "1-dən 5-ə qədər ulduz reytinqi" },
+        "comment": { "type": "string", "description": "Müştərinin yazılı rəyi" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Rəyin yazılma vaxtı" }
+      },
+      "required": ["orderId", "rating", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "İstifadəçi məlumatları"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Xidmət kateqoriyaları"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Sifarişlər"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Rəylər"
+    }
+  }
+}

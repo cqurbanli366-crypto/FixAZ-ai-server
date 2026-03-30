@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - fullName: string (required)
+    //   - phone: string (required)
+    //   - role: string (required, enum: customer, repairman, admin)
+    //   - balance: number (optional)
+    //   - finCode: string (optional, repairman only)
+    //   - profession: string (optional, repairman only)
+    //   - status: string (required, enum: active, pending, suspended)
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // Collection: categories
+    // Fields:
+    //   - name: string (required)
+    //   - basePrice: number (required)
+    //   - iconUrl: string (optional)
+    //
+    // Collection: orders
+    // Fields:
+    //   - customerId: string (required)
+    //   - repairmanId: string (optional)
+    //   - categoryId: string (required)
+    //   - address: string (required)
+    //   - status: string (required, enum)
+    //   - totalPrice: number (optional)
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // Collection: reviews
+    // Fields:
+    //   - orderId: string (required)
+    //   - rating: number (required, 1-5)
+    //   - comment: string (optional)
+    //   - createdAt: string (required, ISO 8601)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "cqurbanli366@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data) {
+      return data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 100 &&
+             data.phone is string && data.phone.size() >= 10 &&
+             data.role in ['customer', 'repairman', 'admin'] &&
+             data.status in ['active', 'pending', 'suspended'] &&
+             data.createdAt is string;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.basePrice is number && data.basePrice >= 0;
+    }
+
+    function isValidOrder(data) {
+      return data.customerId is string &&
+             data.categoryId is string &&
+             data.address is string && data.address.size() > 0 &&
+             data.status in ["Pending", "Accepted", "On the Way", "Started", "Completed", "Cancelled"] &&
+             data.createdAt is string;
+    }
+
+    function isValidReview(data) {
+      return data.orderId is string &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.createdAt is string;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role != 'admin' || isAdmin());
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.repairmanId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.customerId && isValidOrder(request.resource.data);
+      allow update: if isAuthenticated() && (request.auth.uid == resource.data.customerId || request.auth.uid == resource.data.repairmanId || isAdmin()) && isValidOrder(request.resource.data);
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidReview(request.resource.data);
+      allow update: if isAdmin();
+    }
+  }
+}

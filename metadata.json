@@ -1,0 +1,7 @@
+{
+  "name": "fixAz",
+  "description": "Azərbaycanda təmir və ev xidmətləri üçün on-demand platforma.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
